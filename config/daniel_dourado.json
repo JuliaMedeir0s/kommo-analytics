@@ -1,0 +1,18 @@
+{
+    "client_name": "Daniel Dourado",
+    "kommo": {
+        "subdomain": "drdanieldourado",
+        "origin_field_id": 1982699,
+        "won_status_id": 142,
+        "lost_status_id": 143,
+        "pipeline_id": 8650467
+    },
+    "notifications": {
+        "telegram_chat_id": "-1003685869410",
+        "clickup_list_id": "901323927626"
+    },
+    "settings": {
+        "report_day": "Wednesday",
+        "timezone": "America/Sao_Paulo"
+    }
+}

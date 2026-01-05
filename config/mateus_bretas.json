@@ -1,0 +1,18 @@
+{
+    "client_name": "Mateus Bretas",
+    "kommo": {
+        "subdomain": "mateusbretasadvogados",
+        "origin_field_id": 934048,
+        "won_status_id": 142,
+        "lost_status_id": 143,
+        "pipeline_id": 12196520
+    },
+    "notifications": {
+        "telegram_chat_id": "-1003326347059",
+        "clickup_list_id": "901323927626"
+    },
+    "settings": {
+        "report_day": "Wednesday",
+        "timezone": "America/Sao_Paulo"
+    }
+}

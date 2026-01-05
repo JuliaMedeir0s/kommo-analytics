@@ -1,0 +1,18 @@
+{
+    "client_name": "Eliney Faria",
+    "kommo": {
+        "subdomain": "drelineyfaria1",
+        "origin_field_id": 1097835,
+        "won_status_id": 142,
+        "lost_status_id": 143,
+        "pipeline_id": 11061668
+    },
+    "notifications": {
+        "telegram_chat_id": "-1003645564111",
+        "clickup_list_id": "901323927626"
+    },
+    "settings": {
+        "report_day": "Wednesday",
+        "timezone": "America/Sao_Paulo"
+    }
+}
