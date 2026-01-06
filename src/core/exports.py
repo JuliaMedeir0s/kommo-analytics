@@ -1,4 +1,5 @@
 import os
+import re
 import pandas as pd
 from datetime import datetime
 from core.logger import logger
@@ -106,22 +107,98 @@ class ExportEngine:
         }
     
     @staticmethod
+    def _extract_contact(lead: dict) -> str:
+        """
+        Extrai o contato do lead a partir dos campos customizados.
+        Busca por email ou telefone, validando o formato.
+        Telefones são formatados para +55...
+        Retorna string vazia se não encontrar contato válido.
+        """
+        custom_fields = lead.get('custom_fields_values', [])
+        
+        contacts = []
+        
+        if custom_fields:
+            for field in custom_fields:
+                values = field.get('values', [])
+                if values:
+                    contact_value = values[0].get('value', '').strip()
+                    if contact_value:
+                        contacts.append(contact_value)
+        
+        # Priorizar email sobre telefone
+        for contact in contacts:
+            if ExportEngine._is_valid_email(contact):
+                return contact
+        
+        for contact in contacts:
+            if ExportEngine._is_valid_phone(contact):
+                return ExportEngine._format_phone(contact)
+        
+        return ""
+    
+    @staticmethod
+    def _is_valid_email(email: str) -> bool:
+        """Valida formato de email"""
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        return bool(re.match(email_pattern, email))
+    
+    @staticmethod
+    def _is_valid_phone(phone: str) -> bool:
+        """Valida formato de telefone (pode incluir números e alguns caracteres especiais)"""
+        # Remove espaços e caracteres comuns em telefones
+        clean_phone = re.sub(r'[\s\-\(\)\.+]', '', phone)
+        # Verifica se tem entre 10 e 15 dígitos (padrão internacional)
+        return bool(re.match(r'^\d{10,15}$', clean_phone)) and len(clean_phone) >= 10
+    
+    @staticmethod
+    def _format_phone(phone: str) -> str:
+        """
+        Formata o telefone para o padrão internacional +55...
+        Exemplos:
+        - 11987654321 → +5511987654321
+        - (11) 9876-5432 → +5511987654321
+        - +55 11 98765-4321 → +5511987654321
+        - 5511987654321 → +5511987654321
+        """
+        # Remove todos os caracteres especiais
+        clean_phone = re.sub(r'[\s\-\(\)\.+]', '', phone)
+        
+        # Remove o código do país se já existir
+        if clean_phone.startswith('55'):
+            clean_phone = clean_phone[2:]
+        
+        # Garante que temos 11 dígitos (DDD + número)
+        # Se tiver menos, assume que está incompleto
+        # Se tiver mais, pega os últimos 11
+        if len(clean_phone) > 11:
+            clean_phone = clean_phone[-11:]
+        elif len(clean_phone) < 11:
+            # Se tiver menos de 11, não formata
+            return ""
+        
+        # Formata com o código do país Brasil
+        return f"+55{clean_phone}"
+    
+    @staticmethod
     def _leads_to_dataframe(leads: list) -> pd.DataFrame:
-        """Converte lista de leads em DataFrame com colunas principais"""
+        """
+        Converte lista de leads em DataFrame apenas com Nome e Contato validado.
+        """
         if not leads:
-            return pd.DataFrame(columns=["ID", "Nome", "Valor", "Status", "Responsável", "Criado em", "Atualizado em"])
+            return pd.DataFrame(columns=["Nome", "Contato"])
         
         rows = []
         for lead in leads:
-            rows.append({
-                "ID": lead.get('id'),
-                "Nome": lead.get('name', 'Sem nome'),
-                "Valor": lead.get('price', 0),
-                "Status": lead.get('status_id'),
-                "Responsável": lead.get('responsible_user_id'),
-                "Criado em": datetime.fromtimestamp(lead.get('created_at', 0)).strftime("%Y-%m-%d %H:%M:%S") if lead.get('created_at') else "",
-                "Atualizado em": datetime.fromtimestamp(lead.get('updated_at', 0)).strftime("%Y-%m-%d %H:%M:%S") if lead.get('updated_at') else "",
-            })
+            name = lead.get('name', 'Sem nome').strip()
+            contact = ExportEngine._extract_contact(lead)
+            
+            # Apenas inclui o lead se tiver nome e contato válido
+            if name and contact:
+                rows.append({
+                    "Nome": name,
+                    "Contato": contact,
+                })
         
         return pd.DataFrame(rows)
     

@@ -65,6 +65,21 @@ class AnalyticsEngine:
         }
     
     @staticmethod
+    def get_origin_value(lead: dict, origin_field_id: int) -> str:
+        """
+        Extrai o valor do campo de origem de um lead.
+        Se não encontrar o campo, retorna "Desconhecido".
+        """
+        custom_fields = lead.get('custom_fields_values', [])
+        if custom_fields:
+            for field in custom_fields:
+                if field.get('field_id') == origin_field_id:
+                    values = field.get('values', [])
+                    if values:
+                        return values[0].get('value', 'Desconhecido')
+        return "Desconhecido"
+    
+    @staticmethod
     def calculate_efficiency_by_origin(leads_created, leads_won_period, origin_field_id):
         # 1. Conta leads criados por origem
         created_by_origin = {}
