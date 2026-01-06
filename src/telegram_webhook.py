@@ -217,33 +217,45 @@ async def telegram_webhook(update: dict):
     text = message.get("text", "")
 
     if not chat_id:
+        logger.info("⚠️ [WEBHOOK] Chat ID ausente na mensagem")
         return {"ok": True}
+
+    logger.info(f"📨 [WEBHOOK] Mensagem recebida - Chat ID: {chat_id}, Texto: {text}")
 
     messenger = get_messenger()
     if messenger is None:
+        logger.error("❌ [WEBHOOK] TELEGRAM_BOT_TOKEN não configurado")
         return {"ok": False, "error": "Bot token ausente"}
 
     command = normalize_command(text)
+    logger.info(f"📝 [WEBHOOK] Comando normalizado: {command}")
+    
     report_type = resolve_report_type(command)
+    logger.info(f"📊 [WEBHOOK] Tipo de relatório resolvido: {report_type}")
 
     if report_type is None or report_type == "help":
+        logger.info(f"ℹ️ [WEBHOOK] Enviando help_message() para chat {chat_id}")
         messenger.send_message(chat_id, help_message())
         return {"ok": True}
 
     # Identifica qual cliente está fazendo a requisição
     client_id = get_client_by_chat_id(chat_id)
+    logger.info(f"🔍 [WEBHOOK] Chat {chat_id} → Client ID: {client_id}")
+    
     if not client_id:
+        logger.warning(f"⚠️ [WEBHOOK] Chat ID {chat_id} não encontrado em nenhuma configuração de cliente")
         messenger.send_message(chat_id, "❌ Este chat não está configurado para nenhum cliente. Verifique o telegram_chat_id no arquivo de configuração.")
-        logger.warning(f"Chat ID {chat_id} não encontrado em nenhuma configuração de cliente")
         return {"ok": True}
 
     # Se for comando de exportação, processa separadamente
     if report_type.startswith("export_"):
+        logger.info(f"📦 [WEBHOOK] Processando exportação: {report_type}")
         messenger.send_message(chat_id, f"📥 Gerando exportação: {command}\nAguarde alguns segundos…")
         _handle_export_command(report_type, chat_id, messenger, client_id)
         return {"ok": True}
 
     # Caso contrário, é relatório normal
+    logger.info(f"📋 [WEBHOOK] Processando relatório: {report_type}")
     messenger.send_message(chat_id, f"📥 Comando recebido: {command}\nGerando relatório…")
     _run_pipeline_async(report_type, messenger, client_id)
 
