@@ -11,7 +11,7 @@ from integrations.messenger import TelegramMessenger
 # Carrega variáveis de ambiente (.env)
 load_dotenv()
 
-def run_analytics_pipeline(report_type="weekly", messenger: TelegramMessenger | None = None):
+def run_analytics_pipeline(report_type="weekly", messenger: TelegramMessenger | None = None, client_id: str | None = None):
     logger.info(f"🚀 [INÍCIO] Iniciando Engine de Analytics: Relatório {report_type.upper()}")
 
     # Aliases para manter compatibilidade e clareza
@@ -31,14 +31,25 @@ def run_analytics_pipeline(report_type="weekly", messenger: TelegramMessenger | 
     # 2. Varredura de Clientes (Busca todos os arquivos .json na pasta /config)
     config_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config')
     try:
-        client_files = [f.replace('.json', '') for f in os.listdir(config_dir) if f.endswith('.json')]
+        all_clients = [f.replace('.json', '') for f in os.listdir(config_dir) if f.endswith('.json')]
     except FileNotFoundError:
         logger.error("📂 Pasta /config não encontrada.")
         return
 
-    if not client_files:
+    if not all_clients:
         logger.warning("⚠️ Nenhum arquivo de configuração de cliente encontrado.")
         return
+    
+    # Se client_id foi especificado, processa apenas esse cliente
+    if client_id:
+        if client_id not in all_clients:
+            logger.error(f"❌ Cliente {client_id} não encontrado nas configurações")
+            return
+        client_files = [client_id]
+        logger.info(f"📌 Processando apenas o cliente: {client_id}")
+    else:
+        client_files = all_clients
+        logger.info(f"📌 Processando todos os clientes: {len(client_files)}")
 
     # 3. Definição do Período de Busca baseado no tipo de relatório
     periods = DateHelper.get_timestamps_for_report(report_type)

@@ -2,6 +2,7 @@ import os
 import threading
 from fastapi import FastAPI
 from core.logger import logger
+from core.client_resolver import get_client_by_chat_id
 from handlers.telegram_commands import resolve_report_type, help_message, normalize_command
 from integrations.messenger import TelegramMessenger
 from main import run_analytics_pipeline
@@ -17,8 +18,8 @@ def get_messenger() -> TelegramMessenger | None:
     return TelegramMessenger(bot_token)
 
 
-def _run_pipeline_async(report_type: str, messenger: TelegramMessenger):
-    thread = threading.Thread(target=run_analytics_pipeline, args=(report_type, messenger), daemon=True)
+def _run_pipeline_async(report_type: str, messenger: TelegramMessenger, client_id: str | None = None):
+    thread = threading.Thread(target=run_analytics_pipeline, args=(report_type, messenger, client_id), daemon=True)
     thread.start()
 
 
@@ -43,8 +44,15 @@ async def telegram_webhook(update: dict):
         messenger.send_message(chat_id, help_message())
         return {"ok": True}
 
+    # Identifica qual cliente está fazendo a requisição
+    client_id = get_client_by_chat_id(chat_id)
+    if not client_id:
+        messenger.send_message(chat_id, "❌ Este chat não está configurado para nenhum cliente. Verifique o telegram_chat_id no arquivo de configuração.")
+        logger.warning(f"Chat ID {chat_id} não encontrado em nenhuma configuração de cliente")
+        return {"ok": True}
+
     messenger.send_message(chat_id, f"📥 Comando recebido: {command}\nGerando relatório…")
-    _run_pipeline_async(report_type, messenger)
+    _run_pipeline_async(report_type, messenger, client_id)
 
     return {"ok": True}
 

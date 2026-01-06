@@ -48,20 +48,39 @@ Um endpoint simples recebe o `update` do Telegram e dispara o pipeline em segund
 O pipeline continua enviando os relatórios para os chats definidos em cada config JSON.
 
 ## 🚢 Docker (Local)
+
+### Opção 1: Docker Compose (Recomendado)
+```bash
+# Build e rodar em um comando
+docker-compose up --build
+
+# Rodar em background (detached)
+docker-compose up -d
+
+# Ver logs
+docker-compose logs -f
+
+# Parar
+docker-compose down
+```
+
+### Opção 2: Docker manual
 1. Build da imagem: `docker build -t kommo-analytics .`
 2. Rodar com variáveis do `.env`: `docker run -p 8000:8000 --env-file .env kommo-analytics`
 3. Se quiser editar configs sem rebuild, monte a pasta local: `docker run -p 8000:8000 --env-file .env -v $(pwd)/config:/app/config kommo-analytics`
+
+### Testes e webhook:
 4. Teste local: `curl http://localhost:8000/health` (deve retornar `{"status":"ok"}`)
 5. Use ngrok para expor temporariamente: `ngrok http 8000`
 6. Registre o webhook no Telegram: `https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://sua-url/telegram/webhook`
 
-Arquivos úteis: [Dockerfile](Dockerfile) e [.dockerignore](.dockerignore).
+Arquivos úteis: [docker-compose.yml](docker-compose.yml), [Dockerfile](Dockerfile) e [.dockerignore](.dockerignore).
 
 ## ☁️ Deploy no Render (Gratuito)
 O Render fornece URL HTTPS pública automaticamente, ideal para webhook do Telegram.
 
 ### Passo a passo:
-1. **Crie conta no Render:** https://render.com (pode usar GitHub login)
+1. **Crie conta no Render:** https://render.com
 2. **Novo Web Service:**
    - Dashboard → "New +" → "Web Service"
    - Conecte seu repositório GitHub
@@ -70,7 +89,7 @@ O Render fornece URL HTTPS pública automaticamente, ideal para webhook do Teleg
    - **Environment:** Docker
    - **Region:** escolha a mais próxima
    - **Branch:** main
-   - **Dockerfile Path:** `Dockerfile` (detecta automaticamente)
+   - **Dockerfile Path:** `Dockerfile` 
    - **Plan:** Free
 4. **Variáveis de ambiente:**
    - Clique em "Advanced" ou vá em "Environment" depois do deploy
@@ -80,7 +99,6 @@ O Render fornece URL HTTPS pública automaticamente, ideal para webhook do Teleg
      - `ELINEY_FARIA_TOKEN`
      - `MARCELA_DI_LOLLO_TOKEN`
      - `MATEUS_BRETAS_TOKEN`
-     - (ou as que você tiver configuradas)
 5. **Deploy:**
    - Clique em "Create Web Service"
    - Aguarde o build (leva ~2-5min na primeira vez)
