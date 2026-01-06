@@ -211,32 +211,33 @@ def _handle_export_command(export_type: str, chat_id: int, messenger: TelegramMe
 
 @app.post("/telegram/webhook")
 async def telegram_webhook(update: dict):
-    message = update.get("message") or update.get("edited_message") or {}
-    chat = message.get("chat", {})
-    chat_id = chat.get("id")
-    text = message.get("text", "")
+    try:
+        message = update.get("message") or update.get("edited_message") or {}
+        chat = message.get("chat", {})
+        chat_id = chat.get("id")
+        text = message.get("text", "")
 
-    if not chat_id:
-        logger.info("⚠️ [WEBHOOK] Chat ID ausente na mensagem")
-        return {"ok": True}
+        if not chat_id:
+            logger.info("⚠️ [WEBHOOK] Chat ID ausente na mensagem")
+            return {"ok": True}
 
-    logger.info(f"📨 [WEBHOOK] Mensagem recebida - Chat ID: {chat_id}, Texto: {text}")
+        logger.info(f"📨 [WEBHOOK] Mensagem recebida - Chat ID: {chat_id}, Texto: {text}")
 
-    messenger = get_messenger()
-    if messenger is None:
-        logger.error("❌ [WEBHOOK] TELEGRAM_BOT_TOKEN não configurado")
-        return {"ok": False, "error": "Bot token ausente"}
+        messenger = get_messenger()
+        if messenger is None:
+            logger.error("❌ [WEBHOOK] TELEGRAM_BOT_TOKEN não configurado")
+            return {"ok": False, "error": "Bot token ausente"}
 
-    command = normalize_command(text)
-    logger.info(f"📝 [WEBHOOK] Comando normalizado: {command}")
-    
-    report_type = resolve_report_type(command)
-    logger.info(f"📊 [WEBHOOK] Tipo de relatório resolvido: {report_type}")
+        command = normalize_command(text)
+        logger.info(f"📝 [WEBHOOK] Comando normalizado: {command}")
+        
+        report_type = resolve_report_type(command)
+        logger.info(f"📊 [WEBHOOK] Tipo de relatório resolvido: {report_type}")
 
-    if report_type is None or report_type == "help":
-        logger.info(f"ℹ️ [WEBHOOK] Enviando help_message() para chat {chat_id}")
-        messenger.send_message(chat_id, help_message())
-        return {"ok": True}
+        if report_type is None or report_type == "help":
+            logger.info(f"ℹ️ [WEBHOOK] Enviando help_message() para chat {chat_id}")
+            messenger.send_message(chat_id, help_message())
+            return {"ok": True}
 
     # Identifica qual cliente está fazendo a requisição
     client_id = get_client_by_chat_id(chat_id)
@@ -260,6 +261,10 @@ async def telegram_webhook(update: dict):
     _run_pipeline_async(report_type, messenger, client_id)
 
     return {"ok": True}
+
+    except Exception as e:
+        logger.error(f"❌ [WEBHOOK] Exceção não tratada no webhook: {e}", exc_info=True)
+        return {"ok": False, "error": str(e)}
 
 
 @app.get("/health")
