@@ -1,3 +1,46 @@
+## Relatórios e Comandos
+
+### Comandos de Relatório (texto)
+- `/semana`: Semana atual (Dom-Hoje)
+- `/semanapassada`: Semana passada (Dom-Sáb)
+- `/mes`: Mês atual (até hoje)
+- `/mespassado`: Mês anterior (fechado)
+- `/ano`: Ano atual (até hoje)
+- `/anopassado`: Ano anterior (retrospectiva)
+
+### Comandos de Exportação (Excel + CSV)
+- `/exportar_15dias`: Todas as categorias dos últimos 15 dias (8 arquivos)
+- `/exportar`: Histórico completo (todas categorias)
+- `/exportar_semana`, `/exportar_semanapassada`, `/exportar_mes`, `/exportar_mespassado`, `/exportar_ano`, `/exportar_anopassado`
+- Por categoria: `ganhos`, `perdidos`, `ativos`, `perdidos_followup` com sufixos `_15dias`, `_semana`, `_mes`, `_ano`
+
+### Layouts dos Relatórios
+
+#### Relatório Semanal
+Foco: Ritmo e Eficiência.
+- Entrada (Leads Novos): Criados, Leads Novos Fechados
+- Resultado (Ganhos Totais): Vendas Fechadas, Taxa de Conversão
+- Relação Leads/Venda: Ratio (leads por 1 venda)
+- Origens: Lista completa com percentual
+
+#### Relatório Mensal
+Foco: Saúde do Funil e ROI.
+- Funil de Vendas: Leads Novos, Ganhos (do mês), Ganhos (antigos)
+- Performance Total: Total de Vendas, Leads Perdidos
+- Performance por Origem: [Leads] | [Vendas] | [%]
+
+#### Relatório Anual
+Foco: Sazonalidade e Direcionamento de Verba.
+- Números Globais: Leads Totais, Vendas Totais
+- Sazonalidade: melhores meses por vendas
+- Domínio de Mercado: origens acumuladas no ano
+
+### Testes
+Os testes cobrem integrações e o formatter de relatórios:
+- `tests/test_integration_telegram.py`: envio e saúde do bot
+- `tests/test_integration_kommo.py`: conexão e integridade por cliente
+- `tests/test_report_formatter.py`: verificação de seções e termos em Português
+
 # Kommo CRM Analytics Automator
 
 Sistema de extração e análise de dados do Kommo CRM para geração de relatórios de performance semanais, mensais e anuais.

@@ -4,6 +4,11 @@ from dotenv import load_dotenv
 from core.logger import logger
 from core.config_loader import ConfigLoader
 from core.analytics import AnalyticsEngine
+from core.report_formatter import (
+    build_weekly_message,
+    build_monthly_message,
+    build_annual_message,
+)
 from core.date_helper import DateHelper
 from integrations.kommo_client import KommoClient
 from integrations.messenger import TelegramMessenger
@@ -106,10 +111,15 @@ def run_analytics_pipeline(report_type="weekly", messenger: TelegramMessenger | 
                 all_created = leads_in_pipe + leads_unsorted
                 
                 stats = AnalyticsEngine.calculate_metrics(
-                    all_created, 
-                    leads_won, 
+                    all_created,
+                    leads_won,
                     config['kommo']['won_status_id']
                 )
+
+                # Conversão percentual (vendas/novos leads)
+                conversion_pct = 0.0
+                if stats['total_created'] > 0:
+                    conversion_pct = round(100.0 * stats['total_closed_won'] / stats['total_created'], 1)
                 
                 origins = AnalyticsEngine.group_by_origin(
                     all_created, 
@@ -117,32 +127,28 @@ def run_analytics_pipeline(report_type="weekly", messenger: TelegramMessenger | 
                 )
 
                 # --- FORMATAÇÃO DA MENSAGEM ---
-                report_title = f"📊 *{config['client_name'].upper()}*"
-                report_type_label = f"Relatório {report_type.upper()}"
-                
-                msg = (
-                    f"{report_title}\n"
-                    f"{report_type_label}\n"
-                    f"━━━━━━━━━━━━━━━━━━━━\n\n"
-                    f"📅 *Período*\n"
-                    f"{label_periodo}\n\n"
-                    f"📊 *MÉTRICAS PRINCIPAIS*\n"
-                    f"├ Novos Leads: *{stats['total_created']}*\n"
-                    f"├ Vendas Fechadas: *{stats['total_closed_won']}*\n"
-                    f"└ Conversão Imediata: *{stats['cohort_won']}*\n\n"
-                    f"🎯 *O NORTE (Lead/Venda)*\n"
-                    f"*{stats['ratio']}* leads por 1 venda\n\n"
-                )
-                
-                # Adiciona as top 3 origens com formatação melhorada
-                if origins:
-                    msg += "🌍 *PRINCIPAIS ORIGENS*\n"
-                    for idx, (origin, count) in enumerate(list(origins.items())[:3], 1):
-                        percentage = round((count / stats['total_created'] * 100), 1) if stats['total_created'] > 0 else 0
-                        msg += f"  {idx}. {origin}: *{count}* ({percentage}%)\n"
-                    msg += "\n"
-                
-                msg += "━━━━━━━━━━━━━━━━━━━━\n_Atualizado em análise automática_ ⚙️"
+                if report_type in ("weekly", "last_week"):
+                    msg = build_weekly_message(
+                        config['client_name'], stats, origins, conversion_pct, label_periodo
+                    )
+                elif report_type in ("current_month", "last_month", "monthly"):
+                    # Perdidos do período
+                    lost = client.get_lost_leads(start_ts, end_ts, p_id)
+                    total_lost = len(lost)
+
+                    msg = build_monthly_message(
+                        config['client_name'], stats, origins, conversion_pct,
+                        total_lost, leads_won, config['kommo']['origin_field_id'], label_periodo, start_ts
+                    )
+                elif report_type in ("yearly", "year_to_date", "last_year", "annual"):
+                    msg = build_annual_message(
+                        config['client_name'], stats, origins, leads_won, start_ts
+                    )
+                else:
+                    # Fallback: use weekly-style as baseline
+                    msg = build_weekly_message(
+                        config['client_name'], stats, origins, conversion_pct, label_periodo
+                    )
 
                 # --- ENVIO ---
                 messenger.send_message(config['notifications']['telegram_chat_id'], msg)

@@ -62,6 +62,24 @@ class KommoClient:
         if response.status_code == 200:
             return response.json().get('_embedded', {}).get('leads', [])
         return []
+
+    def get_lost_leads(self, filter_date_from: int, filter_date_to: int, pipeline_id: int):
+        """
+        Busca leads que foram perdidos em um período e em uma pipeline específica.
+        Status 143 representa 'Lost' no Kommo.
+        """
+        endpoint = f"{self.base_url}/leads"
+        params = {
+            "filter[pipeline_id][0]": pipeline_id,
+            "filter[status][0]": 143,
+            "filter[closed_at][from]": filter_date_from,
+            "filter[closed_at][to]": filter_date_to
+        }
+
+        response = requests.get(endpoint, headers=self.headers, params=params)
+        if response.status_code == 200:
+            return response.json().get('_embedded', {}).get('leads', [])
+        return []
     
     def get_lead_custom_fields(self):
         """
