@@ -1,5 +1,6 @@
 import os
 import threading
+from datetime import datetime, timedelta
 from fastapi import FastAPI
 from core.logger import logger
 from core.client_resolver import get_client_by_chat_id
@@ -37,7 +38,12 @@ def _handle_export_command(export_type: str, chat_id: int, messenger: TelegramMe
             period_timestamps = None
             period_label = "Histórico Completo"
             
-            if '_weekly' in export_type:
+            if '_15days' in export_type:
+                end_date = datetime.now()
+                start_date = end_date - timedelta(days=15)
+                period_timestamps = (int(start_date.timestamp()), int(end_date.timestamp()))
+                period_label = "Últimos 15 dias"
+            elif '_weekly' in export_type:
                 period_timestamps = DateHelper.get_timestamps_for_report('weekly')
                 period_label = "Semana Atual"
             elif '_last_week' in export_type:

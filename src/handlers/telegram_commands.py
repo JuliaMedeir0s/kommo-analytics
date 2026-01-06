@@ -11,6 +11,7 @@ COMMAND_MAP = {
     
     # Exportação completa (todas categorias)
     "/exportar": "export_all",
+    "/exportar_15dias": "export_all_15days",
     "/exportar_semana": "export_all_weekly",
     "/exportar_semanapassada": "export_all_last_week",
     "/exportar_mes": "export_all_monthly",
@@ -23,6 +24,12 @@ COMMAND_MAP = {
     "/exportar_perdidos": "export_lost",
     "/exportar_perdidos_followup": "export_lost_followup",
     "/exportar_ativos": "export_active",
+    
+    # Exportação por categoria - últimos 15 dias
+    "/exportar_ganhos_15dias": "export_won_15days",
+    "/exportar_perdidos_15dias": "export_lost_15days",
+    "/exportar_ativos_15dias": "export_active_15days",
+    "/exportar_perdidos_followup_15dias": "export_lost_followup_15days",
     
     # Exportação por categoria - com período
     "/exportar_ganhos_semana": "export_won_weekly",
@@ -55,8 +62,8 @@ def resolve_report_type(command: str):
 def help_message() -> str:
     return (
         "🤖 *KOMMO ANALYTICS BOT*\n"
-        "━━━━━━━━━━━━━━━━━━━━\n\n"
-        "📊 *RELATÓRIOS AUTOMÁTICOS*\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "📊 *RELATÓRIOS (Texto)*\n"
         "Período Atual:\n"
         "  /semana — Semana atual (Dom-Hoje)\n"
         "  /mes — Mês atual (até hoje)\n"
@@ -65,18 +72,41 @@ def help_message() -> str:
         "  /semanapassada — Semana passada (Dom-Sáb)\n"
         "  /mespassado — Mês anterior (fechado)\n"
         "  /anopassado — Ano anterior (retrospectiva)\n\n"
-        "📥 *EXPORTAR DADOS*\n"
-        "Completo (todas as categorias):\n"
+        "📥 *EXPORTAR DADOS (Excel + CSV)*\n\n"
+        "*Exportação Completa (todas as 4 categorias):*\n"
+        "  /exportar_15dias — Últimos 15 dias (8 arquivos)\n"
         "  /exportar — Histórico completo\n"
         "  /exportar_semana — Semana atual\n"
+        "  /exportar_semanapassada — Semana passada\n"
         "  /exportar_mes — Mês atual\n"
-        "  /exportar_ano — Ano atual\n\n"
-        "Por Categoria (ganhos, perdidos, ativos, follow-up):\n"
-        "  /exportar_ganhos [_semana|_mes|_ano]\n"
-        "  /exportar_perdidos [_semana|_mes|_ano]\n"
-        "  /exportar_ativos [_semana|_mes|_ano]\n"
-        "  /exportar_perdidos_followup [_semana|_mes|_ano]\n\n"
-        "_Ex: /exportar_ganhos_semana_\n\n"
-        "━━━━━━━━━━━━━━━━━━━━\n"
+        "  /exportar_mespassado — Mês anterior\n"
+        "  /exportar_ano — Ano atual\n"
+        "  /exportar_anopassado — Ano anterior\n\n"
+        "*Exportação por Categoria - Histórico Completo:*\n"
+        "  /exportar_ganhos — Ganhos\n"
+        "  /exportar_perdidos — Perdidos\n"
+        "  /exportar_ativos — Ativos\n"
+        "  /exportar_perdidos_followup — Perdidos Follow-up\n\n"
+        "*Exportação por Categoria - Últimos 15 dias:*\n"
+        "  /exportar_ganhos_15dias\n"
+        "  /exportar_perdidos_15dias\n"
+        "  /exportar_ativos_15dias\n"
+        "  /exportar_perdidos_followup_15dias\n\n"
+        "*Exportação por Categoria - Semana Atual:*\n"
+        "  /exportar_ganhos_semana\n"
+        "  /exportar_perdidos_semana\n"
+        "  /exportar_ativos_semana\n"
+        "  /exportar_perdidos_followup_semana\n\n"
+        "*Exportação por Categoria - Mês Atual:*\n"
+        "  /exportar_ganhos_mes\n"
+        "  /exportar_perdidos_mes\n"
+        "  /exportar_ativos_mes\n"
+        "  /exportar_perdidos_followup_mes\n\n"
+        "*Exportação por Categoria - Ano Atual:*\n"
+        "  /exportar_ganhos_ano\n"
+        "  /exportar_perdidos_ano\n"
+        "  /exportar_ativos_ano\n"
+        "  /exportar_perdidos_followup_ano\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         "✨ Dúvidas? Use /help\n"
     )
