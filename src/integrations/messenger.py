@@ -6,7 +6,7 @@ class TelegramMessenger:
     def __init__(self, bot_token):
         self.base_url = f"https://api.telegram.org/bot{bot_token}"
 
-    def send_message(self, chat_id, text):
+    def send_message(self, chat_id, text, reply_markup: dict | None = None):
         try:
             endpoint = f"{self.base_url}/sendMessage"
             payload = {
@@ -14,6 +14,8 @@ class TelegramMessenger:
                 "text": text,
                 "parse_mode": "Markdown" # Permite negrito e itálico
             }
+            if reply_markup:
+                payload["reply_markup"] = reply_markup
             logger.info(f"📤 [MESSENGER] Enviando mensagem para chat {chat_id}")
             response = requests.post(endpoint, json=payload, timeout=10)
             result = response.json()

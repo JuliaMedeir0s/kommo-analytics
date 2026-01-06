@@ -8,6 +8,7 @@ from core.config_loader import ConfigLoader
 from core.exports import ExportEngine
 from core.date_helper import DateHelper
 from handlers.telegram_commands import resolve_report_type, help_message, normalize_command
+from core.telegram_menus import main_menu, reports_menu, exports_menu
 from integrations.messenger import TelegramMessenger
 from main import run_analytics_pipeline
 
@@ -123,25 +124,11 @@ def _handle_export_command(export_type: str, chat_id: int, messenger: TelegramMe
     thread.start()
 
 
-@app.post("/telegram/webhook")
-async def telegram_webhook(update: dict):
-    message = update.get("message") or update.get("edited_message") or {}
-    chat = message.get("chat", {})
-    chat_id = chat.get("id")
-    text = message.get("text", "")
-
-    if not chat_id:
-        return {"ok": True}
-
-    messenger = get_messenger()
-    if messenger is None:
-        return {"ok": False, "error": "Bot token ausente"}
-
-    command = normalize_command(text)
+def _process_command(command: str, chat_id: int, messenger: TelegramMessenger):
     report_type = resolve_report_type(command)
 
     if report_type is None or report_type == "help":
-        messenger.send_message(chat_id, help_message())
+        messenger.send_message(chat_id, "Escolha uma opção:", reply_markup=main_menu())
         return {"ok": True}
 
     # Identifica qual cliente está fazendo a requisição
@@ -171,8 +158,52 @@ async def telegram_webhook(update: dict):
     # Caso contrário, é relatório normal
     messenger.send_message(chat_id, f"📥 Comando recebido: {command}\nGerando relatório…")
     _run_pipeline_async(report_type, messenger, client_id)
-
     return {"ok": True}
+
+
+@app.post("/telegram/webhook")
+async def telegram_webhook(update: dict):
+    # Callback queries (inline keyboard)
+    if update.get("callback_query"):
+        cq = update["callback_query"]
+        data = cq.get("data")
+        chat_id = cq.get("message", {}).get("chat", {}).get("id")
+        messenger = get_messenger()
+        if messenger is None:
+            return {"ok": False, "error": "Bot token ausente"}
+
+        if data == "menu_main":
+            messenger.send_message(chat_id, "Escolha uma opção:", reply_markup=main_menu())
+            return {"ok": True}
+        if data == "menu_reports":
+            messenger.send_message(chat_id, "Relatórios disponíveis:", reply_markup=reports_menu())
+            return {"ok": True}
+        if data == "menu_exports":
+            messenger.send_message(chat_id, "Exportações disponíveis:", reply_markup=exports_menu())
+            return {"ok": True}
+        if data == "menu_help":
+            messenger.send_message(chat_id, help_message())
+            return {"ok": True}
+        if data and data.startswith("cmd:"):
+            command = data.replace("cmd:", "")
+            return _process_command(command, chat_id, messenger)
+        return {"ok": True}
+
+    # Mensagens normais
+    message = update.get("message") or update.get("edited_message") or {}
+    chat = message.get("chat", {})
+    chat_id = chat.get("id")
+    text = message.get("text", "")
+
+    if not chat_id:
+        return {"ok": True}
+
+    messenger = get_messenger()
+    if messenger is None:
+        return {"ok": False, "error": "Bot token ausente"}
+
+    command = normalize_command(text)
+    return _process_command(command, chat_id, messenger)
 
 
 @app.get("/health")
