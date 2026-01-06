@@ -21,7 +21,9 @@ def scheduled_export_all_clients():
     logger.info("🔄 [SCHEDULER] Iniciando exportação quinzenal automática (últimos 15 dias)")
     
     # Buscar todos os clientes
-    config_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config')
+    # No Docker, o diretório de configs está em /app/config.
+    # Subimos três níveis a partir de src/ para alcançar /app.
+    config_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config')
     try:
         client_files = [f.replace('.json', '') for f in os.listdir(config_dir) if f.endswith('.json')]
     except FileNotFoundError:

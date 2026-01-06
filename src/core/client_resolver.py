@@ -8,7 +8,9 @@ def get_client_by_chat_id(chat_id: int | str) -> str | None:
     Busca qual cliente está associado a um chat_id específico.
     Retorna o client_id (nome do arquivo sem .json) ou None se não encontrar.
     """
-    config_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config')
+    # Em ambiente Docker, os arquivos de config são copiados para /app/config.
+    # Subimos três níveis a partir de src/core para chegar em /app.
+    config_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config')
     
     try:
         for filename in os.listdir(config_dir):
