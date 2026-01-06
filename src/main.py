@@ -11,15 +11,22 @@ from integrations.messenger import TelegramMessenger
 # Carrega variáveis de ambiente (.env)
 load_dotenv()
 
-def run_analytics_pipeline(report_type="weekly"):
+def run_analytics_pipeline(report_type="weekly", messenger: TelegramMessenger | None = None):
     logger.info(f"🚀 [INÍCIO] Iniciando Engine de Analytics: Relatório {report_type.upper()}")
-    
-    # 1. Configuração do Mensageiro Global
+
+    # Aliases para manter compatibilidade e clareza
+    aliases = {
+        "annual": "last_year",
+        "month": "current_month",
+    }
+    report_type = aliases.get(report_type, report_type)
+
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not bot_token:
         logger.critical("❌ TELEGRAM_BOT_TOKEN não encontrado no arquivo .env")
         return
-    messenger = TelegramMessenger(bot_token)
+
+    messenger = messenger or TelegramMessenger(bot_token)
     
     # 2. Varredura de Clientes (Busca todos os arquivos .json na pasta /config)
     config_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config')
@@ -35,20 +42,25 @@ def run_analytics_pipeline(report_type="weekly"):
 
     # 3. Definição do Período de Busca baseado no tipo de relatório
     periods = DateHelper.get_timestamps_for_report(report_type)
-    
-    # Lógica de seleção de períodos (ajuste conforme as chaves do seu DateHelper)
-    if report_type == "weekly":
-        start_ts, end_ts = periods["current"]
-        label_periodo = "Semana Atual (Dom - Hoje)"
-    elif report_type == "monthly":
-        start_ts, end_ts = periods["previous_month"]
-        label_periodo = "Mês Anterior (Fechado)"
-    elif report_type == "annual":
-        start_ts, end_ts = periods["previous_year"]
-        label_periodo = "Ano Anterior (Retrospectiva)"
-    else:
+    labels = {
+        "weekly": "Semana Atual (Dom - Hoje)",
+        "last_week": "Semana Passada (Dom - Sáb)",
+        "monthly": "Mês Anterior (Fechado)",
+        "last_month": "Mês Anterior (Fechado)",
+        "current_month": "Mês Atual (Até hoje)",
+        "month_to_date": "Mês Atual (Até hoje)",
+        "yearly": "Ano Atual (Até hoje)",
+        "year_to_date": "Ano Atual (Até hoje)",
+        "last_year": "Ano Anterior (Retrospectiva)",
+        "annual": "Ano Anterior (Retrospectiva)",
+    }
+
+    if not periods:
         logger.error(f"❌ Tipo de relatório desconhecido: {report_type}")
         return
+
+    start_ts, end_ts = periods
+    label_periodo = labels.get(report_type, report_type)
 
     # 4. Loop de Processamento por Cliente
     for client_id in client_files:
