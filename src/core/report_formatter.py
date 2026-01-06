@@ -3,8 +3,8 @@ from core.analytics import AnalyticsEngine
 
 
 MESES_PT = [
-    "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
-    "Jul", "Ago", "Set", "Out", "Nov", "Dez"
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 ]
 
 
@@ -28,7 +28,7 @@ def build_weekly_message(client_name: str, stats: dict, origins: dict, conversio
     )
 
     if origins:
-        msg += "🌍 *Origens (Total: 100%)*\n"
+        msg += "🌍 *Origens*\n"
         for idx, (origin, count) in enumerate(origins.items(), 1):
             pct = round((count / stats['total_created'] * 100), 1) if stats['total_created'] > 0 else 0
             msg += f"{idx}. {origin}: *{count}* ({pct}%)\n"

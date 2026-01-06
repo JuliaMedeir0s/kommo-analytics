@@ -50,21 +50,58 @@ class ExportEngine:
         start_ts = period_timestamps[0] if period_timestamps else None
         end_ts = period_timestamps[1] if period_timestamps else None
         
-        # Buscar todos os leads da pipeline principal
-        all_leads = kommo.get_leads(start_ts=start_ts, end_ts=end_ts, pipeline_id=pipeline_id)
+        # 1. GANHOS - leads fechados como ganho no período
+        endpoint_ganhos = f"{kommo.base_url}/leads"
+        params_ganhos = {
+            "filter[pipeline_id][0]": pipeline_id,
+            "filter[status][0]": won_status_id,
+            "with": "contacts"
+        }
+        # Filtra pela data de fechamento (quando virou ganho)
+        if start_ts and end_ts:
+            params_ganhos["filter[closed_at][from]"] = start_ts
+            params_ganhos["filter[closed_at][to]"] = end_ts
         
-        # 1. GANHOS (won_status_id)
-        won_leads = [l for l in all_leads if str(l.get('status_id')) == str(won_status_id)]
-        won_df = ExportEngine._leads_to_dataframe(won_leads)
+        logger.info(f"🔍 Buscando ganhos: {endpoint_ganhos}")
+        response_ganhos = kommo._request_get_all_pages(endpoint_ganhos, params_ganhos)
+        logger.info(f"📦 Resposta ganhos: total {len(response_ganhos.get('_embedded', {}).get('leads', []))} leads")
+        won_leads_raw = response_ganhos.get('_embedded', {}).get('leads', [])
+        # Dedupe por ID para evitar duplicatas entre páginas
+        seen_ids = set()
+        won_leads = []
+        for l in won_leads_raw:
+            lid = l.get('id')
+            if lid and lid not in seen_ids:
+                seen_ids.add(lid)
+                won_leads.append(l)
+        logger.info(f"✅ Total de ganhos encontrados: {len(won_leads)}")
+        won_df = ExportEngine._leads_to_dataframe(won_leads, kommo)
         won_files = ExportEngine._save_both_formats(
             won_df, 
             client_dir, 
             f"{client_id}_ganhos_{timestamp}"
         )
         
-        # 2. PERDIDOS da pipeline principal (lost_status_id)
-        lost_leads = [l for l in all_leads if str(l.get('status_id')) == str(lost_status_id)]
-        lost_df = ExportEngine._leads_to_dataframe(lost_leads)
+        # 2. PERDIDOS - apenas pipeline principal, filtrando por closed_at
+        endpoint_perdidos = f"{kommo.base_url}/leads"
+        params_perdidos = {
+            "filter[pipeline_id][0]": pipeline_id,
+            "filter[status][0]": lost_status_id,
+            "with": "contacts"
+        }
+        if start_ts and end_ts:
+            params_perdidos["filter[closed_at][from]"] = start_ts
+            params_perdidos["filter[closed_at][to]"] = end_ts
+        response_perdidos = kommo._request_get_all_pages(endpoint_perdidos, params_perdidos)
+        lost_leads_raw = response_perdidos.get('_embedded', {}).get('leads', [])
+        seen_ids = set()
+        lost_leads = []
+        for l in lost_leads_raw:
+            lid = l.get('id')
+            if lid and lid not in seen_ids:
+                seen_ids.add(lid)
+                lost_leads.append(l)
+        lost_df = ExportEngine._leads_to_dataframe(lost_leads, kommo)
         lost_files = ExportEngine._save_both_formats(
             lost_df, 
             client_dir, 
@@ -74,23 +111,60 @@ class ExportEngine:
         # 3. PERDIDOS FOLLOW-UP (todas as pipelines de follow-up com status perdido)
         lost_followup_leads = []
         for fup_id in followup_pipeline_ids:
-            fup_leads = kommo.get_leads(start_ts=start_ts, end_ts=end_ts, pipeline_id=fup_id)
-            lost_fup = [l for l in fup_leads if str(l.get('status_id')) == str(lost_status_id)]
-            lost_followup_leads.extend(lost_fup)
+            endpoint_fup = f"{kommo.base_url}/leads"
+            params_fup_closed = {
+                "filter[pipeline_id][0]": fup_id,
+                "filter[status][0]": lost_status_id,
+                "with": "contacts"
+            }
+            params_fup_updated = params_fup_closed.copy()
+            # Filtra pela data de fechamento (quando virou perdido) e fallback updated_at
+            if start_ts and end_ts:
+                params_fup_closed["filter[closed_at][from]"] = start_ts
+                params_fup_closed["filter[closed_at][to]"] = end_ts
+                params_fup_updated["filter[updated_at][from]"] = start_ts
+                params_fup_updated["filter[updated_at][to]"] = end_ts
+            
+            response_fup_closed = kommo._request_get_all_pages(endpoint_fup, params_fup_closed)
+            response_fup_updated = kommo._request_get_all_pages(endpoint_fup, params_fup_updated)
+            lost_fup_raw = []
+            lost_fup_raw.extend(response_fup_closed.get('_embedded', {}).get('leads', []))
+            lost_fup_raw.extend(response_fup_updated.get('_embedded', {}).get('leads', []))
+            # Dedupe incremental
+            existing = {l.get('id') for l in lost_followup_leads}
+            for l in lost_fup_raw:
+                lid = l.get('id')
+                if lid and lid not in existing:
+                    lost_followup_leads.append(l)
+                    existing.add(lid)
         
-        lost_fup_df = ExportEngine._leads_to_dataframe(lost_followup_leads)
+        lost_fup_df = ExportEngine._leads_to_dataframe(lost_followup_leads, kommo)
         lost_fup_files = ExportEngine._save_both_formats(
             lost_fup_df, 
             client_dir, 
             f"{client_id}_perdidos_followup_{timestamp}"
         )
         
-        # 4. ATIVOS (todos que não são ganhos nem perdidos na pipeline principal)
+        # 4. ATIVOS - pipeline principal exceto ganhos/perdidos
+        endpoint_ativos = f"{kommo.base_url}/leads"
+        params_ativos = {
+            "filter[pipeline_id][0]": pipeline_id,
+            "with": "contacts"
+        }
+        response_ativos = kommo._request_get_all_pages(endpoint_ativos, params_ativos)
+        all_leads_raw = response_ativos.get('_embedded', {}).get('leads', [])
+        seen_ids = set()
+        all_leads = []
+        for l in all_leads_raw:
+            lid = l.get('id')
+            if lid and lid not in seen_ids:
+                seen_ids.add(lid)
+                all_leads.append(l)
         active_leads = [
             l for l in all_leads 
             if str(l.get('status_id')) not in [str(won_status_id), str(lost_status_id)]
         ]
-        active_df = ExportEngine._leads_to_dataframe(active_leads)
+        active_df = ExportEngine._leads_to_dataframe(active_leads, kommo)
         active_files = ExportEngine._save_both_formats(
             active_df, 
             client_dir, 
@@ -181,26 +255,102 @@ class ExportEngine:
         return f"+55{clean_phone}"
     
     @staticmethod
-    def _leads_to_dataframe(leads: list) -> pd.DataFrame:
+    def _leads_to_dataframe(leads: list, kommo_client=None) -> pd.DataFrame:
         """
-        Converte lista de leads em DataFrame apenas com Nome e Contato validado.
+        Converte lista de leads em DataFrame com Nome e Telefone do contato.
         """
         if not leads:
-            return pd.DataFrame(columns=["Nome", "Contato"])
+            return pd.DataFrame(columns=["Nome", "Telefone"])
         
+        # Extrair todos os IDs de contatos únicos
+        all_contact_ids = []
+        lead_contact_map = {}  # Mapeia lead_id -> contact_id principal
+        
+        for lead in leads:
+            contact_ids = ExportEngine._extract_contact_ids(lead)
+            if contact_ids:
+                lead_id = lead.get('id')
+                lead_contact_map[lead_id] = contact_ids[0]  # Primeiro contato (principal)
+                if contact_ids[0] not in all_contact_ids:
+                    all_contact_ids.append(contact_ids[0])
+        
+        # Buscar todos os contatos em lotes de até 250 IDs
+        contacts_data = {}
+        if all_contact_ids and kommo_client:
+            BATCH = 250
+            for i in range(0, len(all_contact_ids), BATCH):
+                chunk_ids = all_contact_ids[i:i+BATCH]
+                contacts_list = kommo_client.get_contacts_batch(chunk_ids)
+                if contacts_list:
+                    for contact in contacts_list:
+                        contact_id = contact.get('id')
+                        if contact_id:
+                            contacts_data[contact_id] = contact
+        
+        # Montar as linhas do DataFrame
         rows = []
         for lead in leads:
-            name = lead.get('name', 'Sem nome').strip()
-            contact = ExportEngine._extract_contact(lead)
+            lead_id = lead.get('id')
+            nome = ""
+            telefone = ""
             
-            # Apenas inclui o lead se tiver nome e contato válido
-            if name and contact:
-                rows.append({
-                    "Nome": name,
-                    "Contato": contact,
-                })
+            # Se tem contato vinculado, busca dados do contato
+            if lead_id in lead_contact_map:
+                contact_id = lead_contact_map[lead_id]
+                contact = contacts_data.get(contact_id)
+                if contact:
+                    nome = contact.get('name', '')
+                    telefone = ExportEngine._extract_phone_from_contact(contact)
+            
+            # Se não encontrou dados no contato, usa nome do lead
+            if not nome:
+                nome = lead.get('name', 'Sem nome').strip()
+            
+            rows.append({
+                "Nome": nome,
+                "Telefone": telefone,
+            })
         
         return pd.DataFrame(rows)
+    
+    @staticmethod
+    def _extract_contact_ids(lead: dict) -> list:
+        """
+        Extrai os IDs dos contatos vinculados ao lead.
+        """
+        embedded = lead.get('_embedded', {})
+        contacts = embedded.get('contacts', [])
+        
+        contact_ids = []
+        for contact in contacts:
+            contact_id = contact.get('id')
+            if contact_id:
+                contact_ids.append(contact_id)
+        
+        return contact_ids
+    
+    @staticmethod
+    def _extract_phone_from_contact(contact: dict) -> str:
+        """
+        Extrai o telefone dos custom_fields_values do contato.
+        Retorna exatamente como vem da API.
+        """
+        custom_fields = contact.get('custom_fields_values', [])
+        
+        if not custom_fields:
+            return ""
+        
+        for field in custom_fields:
+            field_code = field.get('field_code')
+            # Telefone tem field_code 'PHONE'
+            if field_code == 'PHONE':
+                values = field.get('values', [])
+                if values:
+                    phone_value = values[0].get('value', '').strip()
+                    if phone_value:
+                        return phone_value
+        
+        return ""
     
     @staticmethod
     def _save_both_formats(df: pd.DataFrame, directory: str, filename: str) -> dict:

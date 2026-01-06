@@ -2,8 +2,8 @@ def main_menu():
     return {
         "inline_keyboard": [
             [
-                {"text": "Relatórios 📊", "callback_data": "menu_reports"},
-                {"text": "Exportações 📥", "callback_data": "menu_exports"},
+                {"text": "Relatórios", "callback_data": "menu_reports"},
+                {"text": "Exportações", "callback_data": "menu_exports"},
             ],
             [
                 {"text": "Ajuda ✨", "callback_data": "menu_help"},
