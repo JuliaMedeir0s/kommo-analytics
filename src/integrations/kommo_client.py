@@ -10,16 +10,20 @@ class KommoClient:
             "Content-Type": "application/json"
         }
     
-    def get_leads(self, filter_date_from: int, filter_date_to: int, pipeline_id: int):
+    def get_leads(self, start_ts: int = None, end_ts: int = None, pipeline_id: int = None):
         """
         Busca leads criados em um período e em uma pipeline específica.
+        Se start_ts/end_ts forem None, busca todos os leads.
         """
         endpoint = f"{self.base_url}/leads"
-        params = {
-            "filter[created_at][from]": filter_date_from,
-            "filter[created_at][to]": filter_date_to,
-            "filter[pipeline_id][0]": pipeline_id  # Adicionando o filtro de pipeline
-        }
+        params = {}
+        
+        if start_ts is not None:
+            params["filter[created_at][from]"] = start_ts
+        if end_ts is not None:
+            params["filter[created_at][to]"] = end_ts
+        if pipeline_id is not None:
+            params["filter[pipeline_id][0]"] = pipeline_id
         
         response = requests.get(endpoint, headers=self.headers, params=params)
         if response.status_code == 200:

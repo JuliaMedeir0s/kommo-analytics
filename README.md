@@ -28,12 +28,33 @@ Automatizar a coleta de eventos e leads para responder à métrica norteadora:
 - Eficiência de funil
 
 ## 🤖 Comandos do Bot (Telegram)
+
+### Relatórios Automáticos:
 - /semana — Semana atual (Dom-Hoje)
 - /semanapassada — Semana passada (Dom-Sáb)
 - /mes — Mês atual (mês até hoje)
 - /mespassado — Mês anterior (fechado)
 - /ano — Ano atual (até hoje)
 - /anopassado — Ano anterior (retrospectiva)
+
+### Exportação Completa (todas categorias):
+- /exportar — Histórico completo (8 arquivos)
+- /exportar_semana — Semana atual
+- /exportar_mes — Mês atual
+- /exportar_ano — Ano atual
+
+### Exportação por Categoria:
+Combine categoria + período opcional:
+- **Categorias:** ganhos, perdidos, ativos, perdidos_followup
+- **Períodos:** (nenhum) = histórico, _semana, _mes, _ano
+
+Exemplos:
+- /exportar_ganhos — Todos ganhos (histórico)
+- /exportar_ganhos_semana — Ganhos da semana atual
+- /exportar_perdidos_mes — Perdidos do mês atual
+- /exportar_ativos_ano — Ativos do ano atual
+
+### Outros:
 - /help — Lista os comandos
 
 ## 🌐 Webhook FastAPI

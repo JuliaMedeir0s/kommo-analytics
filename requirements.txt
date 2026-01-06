@@ -4,3 +4,5 @@ pandas
 pytest
 fastapi
 uvicorn
+openpyxl
+apscheduler

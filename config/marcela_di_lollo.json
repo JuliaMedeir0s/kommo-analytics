@@ -5,7 +5,8 @@
         "origin_field_id": 2371538,
         "won_status_id": 142,
         "lost_status_id": 143,
-        "pipeline_id": 12155656
+        "pipeline_id": 12155656,
+        "pipeline_followup_id": [12155799]
     },
     "notifications": {
         "telegram_chat_id": "-1003537672363",
