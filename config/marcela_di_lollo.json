@@ -3,6 +3,7 @@
     "kommo": {
         "subdomain": "dramarceladilollo",
         "origin_field_id": 2371538,
+        "secretary_origin_field_id": 3002357,
         "won_status_id": 142,
         "lost_status_id": 143,
         "pipeline_id": 12155656,
