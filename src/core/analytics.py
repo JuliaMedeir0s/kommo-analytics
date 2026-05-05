@@ -16,20 +16,16 @@ class AnalyticsEngine:
         }
 
     @staticmethod
-    def group_by_origin(leads, origin_field_id):
+    def group_by_origin(leads, origin_field_id, bot_field_id: int = None):
         origins = {}
         for lead in leads:
-            origin_value = "Desconhecido"
-            # Navega pelos campos customizados do Kommo
-            custom_fields = lead.get('custom_fields_values', [])
-            if custom_fields:
-                for field in custom_fields:
-                    if field.get('field_id') == origin_field_id:
-                        # Pega o valor do campo (geralmente na primeira posição da lista)
-                        origin_value = field['values'][0]['value']
-            
+            if bot_field_id:
+                origin_value = AnalyticsEngine.get_preferred_origin_value(lead, origin_field_id, bot_field_id)
+            else:
+                origin_value = AnalyticsEngine.get_origin_value(lead, origin_field_id)
+
             origins[origin_value] = origins.get(origin_value, 0) + 1
-            
+
         return dict(sorted(origins.items(), key=lambda item: item[1], reverse=True))
 
     @staticmethod
@@ -77,6 +73,33 @@ class AnalyticsEngine:
                     values = field.get('values', [])
                     if values:
                         return values[0].get('value', 'Desconhecido')
+        return "Desconhecido"
+
+    @staticmethod
+    def get_preferred_origin_value(lead: dict, manual_field_id: int, bot_field_id: int = None) -> str:
+        """
+        Retorna o valor de origem preferindo o campo manual (`manual_field_id`) quando preenchido.
+        Se não houver valor manual, tenta o `bot_field_id` (preenchido automaticamente).
+        Caso nenhum esteja presente, retorna "Desconhecido".
+        """
+        # Tenta campo manual
+        custom_fields = lead.get('custom_fields_values', []) or []
+        manual_val = None
+        bot_val = None
+        for field in custom_fields:
+            fid = field.get('field_id')
+            values = field.get('values', [])
+            if not values:
+                continue
+            if fid == manual_field_id:
+                manual_val = values[0].get('value')
+                if manual_val:
+                    return manual_val
+            if bot_field_id and fid == bot_field_id:
+                bot_val = values[0].get('value')
+
+        if bot_val:
+            return bot_val
         return "Desconhecido"
     
     @staticmethod

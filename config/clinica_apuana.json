@@ -1,0 +1,20 @@
+{
+    "client_name": "Clínica Apuanã",
+    "kommo": {
+        "subdomain": "clinicaapuana",
+        "origin_field_id": 1421006,
+        "secretary_origin_field_id": null,
+        "won_status_id": 142,
+        "lost_status_id": 143,
+        "pipeline_id": 13052391,
+        "pipeline_followup_id": []
+    },
+    "notifications": {
+        "telegram_chat_id": "",
+        "clickup_list_id": ""
+    },
+    "settings": {
+        "report_day": "Wednesday",
+        "timezone": "America/Sao_Paulo"
+    }
+}

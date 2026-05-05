@@ -123,7 +123,8 @@ def run_analytics_pipeline(report_type="weekly", messenger: TelegramMessenger | 
                 
                 origins = AnalyticsEngine.group_by_origin(
                     all_created, 
-                    config['kommo']['origin_field_id']
+                    config['kommo']['origin_field_id'],
+                    config['kommo'].get('origin_bot_field_id')
                 )
 
                 # --- FORMATAÇÃO DA MENSAGEM ---
@@ -138,7 +139,8 @@ def run_analytics_pipeline(report_type="weekly", messenger: TelegramMessenger | 
 
                     msg = build_monthly_message(
                         config['client_name'], stats, origins, conversion_pct,
-                        total_lost, leads_won, config['kommo']['origin_field_id'], label_periodo, start_ts
+                        total_lost, leads_won, config['kommo']['origin_field_id'], label_periodo, start_ts,
+                        config['kommo'].get('origin_bot_field_id')
                     )
                 elif report_type in ("yearly", "year_to_date", "last_year", "annual"):
                     msg = build_annual_message(

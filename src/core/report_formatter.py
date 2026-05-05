@@ -40,14 +40,17 @@ def build_weekly_message(client_name: str, stats: dict, origins: dict, conversio
 
 def build_monthly_message(client_name: str, stats: dict, origins: dict, conversion_pct: float,
                           total_lost: int, leads_won: list, origin_field_id: int, label_periodo: str,
-                          start_ts: int) -> str:
+                          start_ts: int, origin_bot_field_id: int = None) -> str:
     cohort_won = stats['cohort_won']
     old_won = max(stats['total_closed_won'] - cohort_won, 0)
 
     created_by_origin = origins
     won_by_origin = {}
     for l in leads_won:
-        origin = AnalyticsEngine.get_origin_value(l, origin_field_id)
+        if origin_bot_field_id:
+            origin = AnalyticsEngine.get_preferred_origin_value(l, origin_field_id, origin_bot_field_id)
+        else:
+            origin = AnalyticsEngine.get_origin_value(l, origin_field_id)
         won_by_origin[origin] = won_by_origin.get(origin, 0) + 1
 
     mes_idx = datetime.fromtimestamp(start_ts).month

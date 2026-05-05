@@ -1,0 +1,21 @@
+{
+    "client_name": "MedCenter Muriaé",
+    "kommo": {
+        "subdomain": "medcentermuriae",
+        "origin_field_id": 676468,
+        "origin_bot_field_id": 3889501,
+        "secretary_origin_field_id": null,
+        "won_status_id": 142,
+        "lost_status_id": 143,
+        "pipeline_id": 12252892,
+        "pipeline_followup_id": [12455095]
+    },
+    "notifications": {
+        "telegram_chat_id": "",
+        "clickup_list_id": ""
+    },
+    "settings": {
+        "report_day": "Wednesday",
+        "timezone": "America/Sao_Paulo"
+    }
+}

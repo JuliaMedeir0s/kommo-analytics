@@ -3,6 +3,8 @@
     "kommo": {
         "subdomain": "drelineyfaria1",
         "origin_field_id": 1097835,
+        "origin_bot_field_id": 3889501,
+        "secretary_origin_field_id": 1109405,
         "won_status_id": 142,
         "lost_status_id": 143,
         "pipeline_id": 11061668,
